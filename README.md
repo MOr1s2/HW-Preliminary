@@ -44,7 +44,7 @@
 
 1. 查看代码修改情况 `git status`
 2. 选择需要提交的代码 `git add <filename>`
-3. 对本次提交进行描述 `git commit -m '增加了xxx文件'`
+3. 对本次提交进行描述 `git commit -m 'Add/Update/Delete xxx and rename xxx to xx'`
 4. 提交到远程分支 `git push origin <branchname>`
 5. 切换到主分支 `git checkout main`
 6. 更新主分支 `git pull origin main`
