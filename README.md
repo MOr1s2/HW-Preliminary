@@ -1,6 +1,6 @@
-# Manual
+# README
 
-> 随手记录一些重要的事情
+> Code for 2023华为软件精英挑战赛初赛
 
 ## Method
 
