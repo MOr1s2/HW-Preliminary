@@ -49,6 +49,6 @@
 3. 对本次提交进行描述 `git commit -m '增加了xxx文件'`
 4. 提交到远程分支 `git push origin <branchname>`
 5. 切换到主分支 `git checkout main`
-6. 更新主分支 `git pull origin master`
+6. 更新主分支 `git pull origin main`
 7. 合并到主分支 `git merge <branchname>`
 8. 提交到远程主分支 `git push`
