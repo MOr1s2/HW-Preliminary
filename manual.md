@@ -32,3 +32,23 @@
 号”+”
 - 选手程序的编译运行均在linux下，选手提交前可尝试在linux平台下编译成功，以免造成编译失败
 - 经过编译后的选手程序（python的程序文件）没有写权限，选手提交代码前应去掉写操作，否则会造成运行失败
+
+### Git Workflow
+
+#### 新建分支
+
+1. 克隆远程仓库 `git clone https://github.com/MOr1s2/HW-Preliminary.git`
+2. 创建新的分支 `git branch <branchname>`
+3. 切换到新的分支 `git checkout <branchname>`
+4. 将新的分支推送到远程 `git push origin <branchname>`
+
+#### 提交代码
+
+1. 查看代码修改情况 `git status`
+2. 选择需要提交的代码 `git add <filename>`
+3. 对本次提交进行描述 `git commit -m '增加了xxx文件'`
+4. 提交到远程分支 `git push origin <branchname>`
+5. 切换到主分支 `git checkout main`
+6. 更新主分支 `git pull origin master`
+7. 合并到主分支 `git merge <branchname>`
+8. 提交到远程主分支 `git push`
