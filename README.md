@@ -40,6 +40,11 @@
 3. 切换到新的分支 `git checkout <branchname>`
 4. 将新的分支推送到远程 `git push origin <branchname>`
 
+#### 同步主分支与个人分支
+
+1. 切换到个人分支 `git checkout <branchname>`
+2. 同步主分支 `git pull origin main`
+
 #### 提交代码
 
 1. 查看代码修改情况 `git status`
