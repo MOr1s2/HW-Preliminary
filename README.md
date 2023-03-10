@@ -12,9 +12,7 @@
 
 ### 编译
 - 参赛选手的源码打包脚本为 CodeCraft_zip.sh
-  ` 
-  sudo sh CodeCraft_zip.sh main.py
-  `
+  `sudo sh CodeCraft_zip.sh main.py`
 
 - 执行机系统环境：
   - 操作系统版本：基于 x86 的 ubuntu 18.04
