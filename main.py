@@ -5,7 +5,7 @@ import numpy as np
 
 BOT = {}  # key:机器人ID  value:(0:工作台ID,1:携带物品类型,2:时间系数,3:碰撞系数,4:角速度,5:线速度x,6:线速度y,7:朝向,8:坐标x,9:坐标y)
 WORKBENCH = {}  # key:工作台ID  value:(0:工作台类型,1:坐标x,2:坐标y,3:剩余生产时间,4:原材料格状态,5:产品格状态)
-WORKBENCH = {}  # key:工作台ID  value:(0:工作台类型,1:坐标x,2:坐标y,3:剩余生产时间,4:原材料格状态,5:产品格状态)
+#WORKBENCH = {}  # key:工作台ID  value:(0:工作台类型,1:坐标x,2:坐标y,3:剩余生产时间,4:原材料格状态,5:产品格状态)
 
 UNIT_LEN = 0.5
 MAX_FORWARD_SPEED = 6.0
@@ -16,6 +16,57 @@ MAX_TORQUE = 50
 
 flag = 0
 
+def Dispatch(workbenchs):
+    h_route = []   # h_route中每个元素为元组：（工作台ID，坐标x，坐标y）。整个h_route存放的是H圈的到达序列
+    for key in workbenchs.keys():
+        h_route += [(key, workbenchs[key][1], workbenchs[key][2])]
+    length = len(h_route)
+    dists = [[0] * length] * length
+    dists = np.array(dists, dtype=np.float32)
+    # 算各个工作台之间的距离，共 n中取2 次
+    for i in range(length):
+        for j in range(i+1, length):
+            dists[i][j] = dists[j][i] = math.sqrt((h_route[i][1] - h_route[j][1])**2 + (h_route[i][2] - h_route[j][2])**2)
+    # 开始边交换寻找近似最优H圈
+    exchange = False
+    for i in range(500):
+        for j in range(length - 2):
+            if (exchange == True):
+                break
+            for k in range(i + 2, length):
+                if (exchange == True):
+                    break
+                if (dists[h_route[j][0]][h_route[k][0]] + dists[h_route[j + 1][0]][h_route[(k + 1) % length][0]] <
+                        dists[h_route[j][0]][h_route[j + 1][0]] + dists[h_route[k][0]][h_route[(k + 1) % length][0]]):
+                    h_route[j + 1: (k + 1)] = h_route[j + 1:(k + 1)][::-1]
+                    exchange = True
+        exchange = False
+        h_length = 0
+        old_h_length = -1e18
+        for j in range(length):
+            h_length += dists[h_route[j][0]][h_route[(j + 1) % length][0]]
+        if (h_length <= old_h_length):
+            break
+        old_h_length = h_length
+        ret = [-1] * length
+        for idx in range(length):
+            ret[h_route[idx][0]] = h_route[(idx + 1) % length][0]
+    return ret
+
+def lookfor_start_loc(bots, workbenchs):# 传入参数分别是BOT字典，WORKBENCH字典
+    ret = [0] * len(bots)   # ret的索引是BOT的ID，对应的值是初始要切入H圈所选择的工作台ID
+    for key in bots.keys:
+        if(bots[key][0] != -1):
+            ret[key] = bots[key][0]
+        else:
+            min = 1e18
+            for key_2 in workbenchs.keys():
+                if(workbenchs[key_2][0] in (1,2,3)):
+                    temp = (workbenchs[key_2][1] - bots[key][8])**2 + (workbenchs[key_2][2] - bots[key][9])**2
+                    if(temp < min):
+                        min = temp
+                        ret[key] = key_2
+    return ret
 
 def f(x, max_x, min_rate):
     if x < max_x:
@@ -114,6 +165,7 @@ if __name__ == '__main__':
         k = int(line)
 
         read_workbench(k)
+        h_route = Dispatch(WORKBENCH)
         read_bot()
 
         if input() != 'OK':
