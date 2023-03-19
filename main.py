@@ -5,6 +5,10 @@ import numpy as np
 
 BOT = {}  # key:机器人ID  value:(0:工作台ID,1:携带物品类型,2:时间系数,3:碰撞系数,4:角速度,5:线速度x,6:线速度y,7:朝向,8:坐标x,9:坐标y)
 WORKBENCH = {}  # key:工作台ID  value:(0:工作台类型,1:坐标x,2:坐标y,3:剩余生产时间,4:原材料格状态,5:产品格状态)
+TARGET_WB = [-1] * 4 # 每个机器人到达一个目标工作台应把对应下标的TARGET_WB的值设为-1
+CONDITIONAL_TARGET_WB = {1:[4,5,9], 2:[4,6,9], 3:[5,6,9], 4:[7,9], 5:[7,9], 6:[7,9], 7:[8,9]}
+WORKBENCH_TYPE2ID = {1:[], 2:[], 3:[], 4:[], 5:[], 6:[], 7:[], 8:[], 9:[]}
+ITEM_NEEDED_BY_WB = {4:[1,2], 5:[1,3], 6:[2,3]}
 #WORKBENCH = {}  # key:工作台ID  value:(0:工作台类型,1:坐标x,2:坐标y,3:剩余生产时间,4:原材料格状态,5:产品格状态)
 
 UNIT_LEN = 0.5
@@ -15,6 +19,63 @@ MAX_TRACTION = 250
 MAX_TORQUE = 50
 
 flag = 0
+
+def Dispatch_init(workbenchs):
+    for key in workbenchs.keys():
+        WORKBENCH_TYPE2ID[workbenchs[key][0]] += key
+def Dispatch_greedy(bots, bots_id):  # 该函数调用于初始时，以及每次到达一个目标工作台执行完买卖操作后
+    """
+    :param bots: 所有机器人的状态信息，参考上面定义的BOT全局变量的结构
+    :param bots_id: 需要寻找新目标的所有机器人ID
+    :return: 无返回，所有结果在全局变量TARGET_WB中
+    """
+    # ret = {}
+    type_7_wb = WORKBENCH_TYPE2ID[7]
+    num_item_456 = [0, 0, 0]
+    for wb in type_7_wb:
+        if ((wb[4] >> 4) & 1 == 1):
+            num_item_456[0] += 1
+        if ((wb[4] >> 5 & 1) == 1):
+            num_item_456[1] += 1
+        if ((wb[4] >> 6 & 1) == 1):
+            num_item_456[2] += 1
+    min_item = num_item_456[0]
+    min_item_id = 4
+    while(min_item_id <= 6):
+        if(num_item_456[min_item_id - 4] < min_item):
+            min_item_id -= 4
+            min_item = num_item_456[min_item_id]
+        min_item_id += 1
+
+    for bot_key in bots_id:
+        Is_bot_has_item = 0
+        if(bots[bot_key][1] > 0):
+            Is_bot_has_item = 1
+            option_wb_type = CONDITIONAL_TARGET_WB[bots[bot_key][1]]
+            if(4 in option_wb_type or 5 in option_wb_type or 6 in option_wb_type):
+                if (min_item_id != option_wb_type[0]):
+                    option_wb_type = [option_wb_type[1]] + [option_wb_type[0]] + [option_wb_type[2]]
+        else:
+            option_wb_type = ITEM_NEEDED_BY_WB[min_item_id] + [min_item_id] + [7] #4，5，6类型的工作台中只有一个可供选择，可能会有bug
+
+        option_wb_id = -1
+        dist = 1e18
+        for type in option_wb_type:
+            if (type == 9 and option_wb_id != -1):
+                break
+            temp_wb_ids = WORKBENCH_TYPE2ID[type]
+            for temp_wb_id in temp_wb_ids:
+                if (temp_wb_id in TARGET_WB):
+                    continue
+                if (((Is_bot_has_item == 1) and ((WORKBENCH[temp_wb_id][4] >> bots[bot_key][
+                    1]) & 1 == 0)) or (Is_bot_has_item == 0 and WORKBENCH[temp_wb_id][5] == 1)):  # temp_wb_id 这个工作台上 bots[bot_key][1] 类型的物品格是空的，即可以到该工作台放机器人手中的物品
+                    dist_now = (WORKBENCH[temp_wb_id][1] - bots[bot_key][8]) ** 2 + (
+                            WORKBENCH[temp_wb_id][2] - bots[bot_key][9]) ** 2
+                    if (dist_now < dist):  # 暂时只考虑有空位放置的工作台中距离最短的那个，之后可以进一步考虑物品栏满的工作台的剩余时间
+                        option_wb_id = temp_wb_id
+                        dist = dist_now
+        TARGET_WB[bot_key] = option_wb_id
+    return
 
 def Dispatch(workbenchs):
     h_route = []   # h_route中每个元素为元组：（工作台ID，坐标x，坐标y）。整个h_route存放的是H圈的到达序列
@@ -29,11 +90,12 @@ def Dispatch(workbenchs):
             dists[i][j] = dists[j][i] = math.sqrt((h_route[i][1] - h_route[j][1])**2 + (h_route[i][2] - h_route[j][2])**2)
     # 开始边交换寻找近似最优H圈
     exchange = False
-    for i in range(500):
+    old_h_length = 1e18
+    for i in range(5000):
         for j in range(length - 2):
             if (exchange == True):
                 break
-            for k in range(i + 2, length):
+            for k in range(j + 2, length):
                 if (exchange == True):
                     break
                 if (dists[h_route[j][0]][h_route[k][0]] + dists[h_route[j + 1][0]][h_route[(k + 1) % length][0]] <
@@ -42,15 +104,16 @@ def Dispatch(workbenchs):
                     exchange = True
         exchange = False
         h_length = 0
-        old_h_length = -1e18
+
         for j in range(length):
             h_length += dists[h_route[j][0]][h_route[(j + 1) % length][0]]
-        if (h_length <= old_h_length):
+        if (h_length >= old_h_length):
             break
         old_h_length = h_length
-        ret = [-1] * length
-        for idx in range(length):
-            ret[h_route[idx][0]] = h_route[(idx + 1) % length][0]
+    # print(h_route, h_length)
+    ret = [-1] * length
+    for idx in range(length):
+        ret[h_route[idx][0]] = h_route[(idx + 1) % length][0]
     return ret
 
 def lookfor_start_loc(bots, workbenchs):# 传入参数分别是BOT字典，WORKBENCH字典
