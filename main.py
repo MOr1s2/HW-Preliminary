@@ -93,6 +93,16 @@ def get_next_bench(bot_id):
                 continue
         if _item == 0 and WORKBENCH[bench_id][5] == 0:
             continue
+        if _item == 0 and WORKBENCH[bench_id][5] == 1:
+            flag = 0
+            _i = WORKBENCH[bench_id][0]
+            for _b in ITEM2BENCH[_i]:
+                _m = get_material(_b)
+                if _m[_i] == 0:
+                    flag = 1
+            if flag == 0:
+                continue
+
         x_bench, y_bench = WORKBENCH[bench_id][1], WORKBENCH[bench_id][2]
         dist = (x_bench - x_bot) ** 2 + (y_bench - y_bot) ** 2
         if dist < min_dist:
@@ -103,7 +113,7 @@ def get_next_bench(bot_id):
 
 def get_material(bench_id):
     if WORKBENCH[bench_id][0] in [1, 2, 3]:
-        return [-1] * 7
+        return [-1] * 8
     elif WORKBENCH[bench_id][0] == 4:
         _material = [-1, 0, 0, -1, -1, -1, -1, -1]
     elif WORKBENCH[bench_id][0] == 5:
@@ -202,7 +212,7 @@ if __name__ == '__main__':
             if rotate == 0:
                 speed = MAX_FORWARD_SPEED
             else:
-                speed = MAX_FORWARD_SPEED / 5
+                speed = MAX_FORWARD_SPEED / 2
             # if BOT[i][8] < 0.5 or BOT[i][9] < 0.5 or BOT[i][8] > 49.5 or BOT[i][9] > 49.5:
             #     speed = MAX_BACKWARD_SPEED
 
@@ -214,10 +224,13 @@ if __name__ == '__main__':
                     sys.stdout.write('sell %d\n' % i)
                     BOT[i][1] = 0
                     WORKBENCH[j][4] += (2 ** item)
+                    for _ in range(4):
+                        NEXT_BENCH_ID[_] = get_next_bench(_)
+                    continue
                 if BOT[i][1] == 0 and WORKBENCH[j][5] == 1:
                     sys.stdout.write('buy %d\n' % i)
                     BOT[i][1] = WORKBENCH[j][0]
-                    WORKBENCH[j][5] == 0
-                for _ in range(4):
-                    NEXT_BENCH_ID[_] = get_next_bench(_)
+                    WORKBENCH[j][5] = 0
+                    for _ in range(4):
+                        NEXT_BENCH_ID[_] = get_next_bench(_)
         finish()
